@@ -1,0 +1,155 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="stylesheet" href="/src/styles.css" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Time Manager</title>
+    <script type="module" src="/src/main.ts" defer></script>
+  </head>
+
+  <body>
+    <div id="app">
+      <!-- Header -->
+      <header id="app-header">
+        <div id="header-top">
+          <h1>Time Manager</h1>
+          <div id="week-nav">
+            <button id="btn-prev-week" title="Previous week">&larr;</button>
+            <button id="btn-today" title="Go to current week">Today</button>
+            <button id="btn-next-week" title="Next week">&rarr;</button>
+            <span id="week-label"></span>
+          </div>
+          <div id="header-actions">
+            <button id="btn-settings" title="Settings">Settings</button>
+            <button id="btn-manage-projects" title="Manage projects">Projects</button>
+            <button id="btn-templates" title="Templates">Templates</button>
+          </div>
+        </div>
+        <div id="weekly-progress">
+          <div id="weekly-progress-info">
+            <span id="weekly-hours-text">0 / 40 hrs</span>
+            <span id="weekly-percentage">0%</span>
+          </div>
+          <div id="weekly-progress-bar-container">
+            <div id="weekly-progress-bar"></div>
+          </div>
+          <button id="btn-set-goal" title="Set weekly hour goal">⚙️</button>
+        </div>
+      </header>
+
+      <!-- Main content -->
+      <div id="main-content">
+        <!-- Calendar grid -->
+        <div id="calendar-container">
+          <div id="calendar-grid"></div>
+        </div>
+
+        <!-- Sidebar -->
+        <aside id="sidebar">
+          <h2>Project Summary</h2>
+          <div id="project-summary-list"></div>
+        </aside>
+      </div>
+    </div>
+
+    <!-- Project Modal -->
+    <div id="project-modal" class="modal hidden">
+      <div class="modal-backdrop"></div>
+      <div class="modal-content">
+        <h2 id="project-modal-title">Add Project</h2>
+        <form id="project-form">
+          <label>
+            Name
+            <input type="text" id="project-name" required />
+          </label>
+          <label>
+            Weekly Hour Target
+            <input type="number" id="project-hours" min="0.5" step="0.5" required />
+          </label>
+          <label>
+            Priority
+            <select id="project-priority">
+              <option value="High">High</option>
+              <option value="Medium">Medium</option>
+              <option value="Low">Low</option>
+            </select>
+          </label>
+          <div class="modal-actions">
+            <button type="submit" class="btn-primary">Save</button>
+            <button type="button" id="btn-cancel-project" class="btn-secondary">Cancel</button>
+          </div>
+        </form>
+        <div id="project-list-section">
+          <h3>Existing Projects</h3>
+          <div id="project-list-manage"></div>
+          <button id="btn-add-project" class="btn-primary">+ Add Project</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Project Selector (dropdown for assigning blocks) -->
+    <div id="project-selector" class="hidden">
+      <div id="project-selector-list"></div>
+    </div>
+
+    <!-- Drag duration indicator -->
+    <div id="drag-indicator" class="hidden"></div>
+
+    <!-- Context Menu -->
+    <div id="context-menu" class="hidden">
+      <button id="ctx-edit">Change Project</button>
+      <button id="ctx-delete">Delete Block</button>
+    </div>
+
+    <!-- Template Modal -->
+    <div id="template-modal" class="modal hidden">
+      <div class="modal-backdrop"></div>
+      <div class="modal-content">
+        <h2>Templates</h2>
+        <div id="template-list"></div>
+        <div class="template-save-section">
+          <h3>Save Current Week as Template</h3>
+          <div class="template-save-row">
+            <input type="text" id="template-name" placeholder="Template name..." />
+            <button id="btn-save-template" class="btn-primary">Save</button>
+          </div>
+        </div>
+        <div class="modal-actions">
+          <button id="btn-close-templates" class="btn-secondary">Close</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Settings Modal -->
+    <div id="settings-modal" class="modal hidden">
+      <div class="modal-backdrop"></div>
+      <div class="modal-content">
+        <h2>Settings</h2>
+        <div class="settings-section">
+          <h3>Data Location</h3>
+          <p class="settings-description">
+            Choose where your time tracking data is stored. Select a cloud-synced folder (OneDrive, Dropbox, etc.) to sync across devices.
+          </p>
+          <div class="data-location-display">
+            <label>Current Location:</label>
+            <div id="current-data-location" class="data-location-path">Loading...</div>
+          </div>
+          <div class="settings-actions">
+            <button id="btn-change-location" class="btn-primary">Change Location</button>
+            <button id="btn-reset-location" class="btn-secondary">Reset to Default</button>
+          </div>
+          <div id="location-change-options" class="hidden">
+            <label class="checkbox-label">
+              <input type="checkbox" id="copy-data-checkbox" checked />
+              Copy existing data to new location
+            </label>
+          </div>
+        </div>
+        <div class="modal-actions">
+          <button id="btn-close-settings" class="btn-secondary">Close</button>
+        </div>
+      </div>
+    </div>
+  </body>
+</html>
