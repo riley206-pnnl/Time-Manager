@@ -7,6 +7,7 @@ import type {
   DayOfWeek,
   ProjectBalance,
   WeeklyStanding,
+  ChargeCodeSplit,
 } from "./types";
 import {
   generateId,
@@ -157,7 +158,8 @@ export function getProjectById(id: string): Project | undefined {
 export function addProject(
   name: string,
   weeklyHourTarget: number,
-  priority: "High" | "Medium" | "Low"
+  priority: "High" | "Medium" | "Low",
+  chargeCodeSplits?: ChargeCodeSplit[]
 ): Project {
   // Assign the next color index that isn't already used
   const usedIndices = new Set(appData.projects.map((p) => p.colorIndex));
@@ -176,6 +178,7 @@ export function addProject(
     weeklyHourTarget,
     priority,
     colorIndex,
+    chargeCodeSplits: chargeCodeSplits && chargeCodeSplits.length > 0 ? chargeCodeSplits : undefined,
   };
   appData.projects.push(project);
   saveProjects(appData.projects).catch(console.error);
@@ -396,6 +399,12 @@ export function calculateProjectBalances(): ProjectBalance[] {
   );
 
   return balances;
+}
+
+// Extract numeric week from week key format "2026-W07" -> 7
+export function getWeekNumber(weekKey: string): number {
+  const match = weekKey.match(/W(\d+)/);
+  return match ? parseInt(match[1], 10) : 0;
 }
 
 // ============================================================

@@ -71,6 +71,15 @@
             Weekly Hour Target
             <input type="number" id="project-hours" min="0.5" step="0.5" required />
           </label>
+          <label class="checkbox-label" id="split-toggle-label">
+            <input type="checkbox" id="project-split-toggle" />
+            Split charge codes
+          </label>
+          <div id="split-codes-section" class="hidden">
+            <div id="split-codes-list"></div>
+            <button type="button" id="btn-add-split-code" class="btn-secondary btn-sm">+ Add Charge Code</button>
+            <div id="split-validation-msg" class="split-validation"></div>
+          </div>
           <label>
             Priority
             <select id="project-priority">

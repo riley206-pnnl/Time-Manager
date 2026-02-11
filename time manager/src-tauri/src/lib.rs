@@ -19,6 +19,12 @@ pub struct Settings {
 // ============================================================
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ChargeCodeSplit {
+    pub code: String,
+    pub percentage: f64,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Project {
     pub id: String,
     pub name: String,
@@ -27,6 +33,8 @@ pub struct Project {
     pub priority: String, // "High", "Medium", "Low"
     #[serde(rename = "colorIndex", default)]
     pub color_index: u32,
+    #[serde(rename = "chargeCodeSplits", default, skip_serializing_if = "Option::is_none")]
+    pub charge_code_splits: Option<Vec<ChargeCodeSplit>>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

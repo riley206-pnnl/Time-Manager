@@ -5,9 +5,11 @@ import {
   slotToTime,
   formatWeekRange,
   getProjectColor,
+  calculateChargeCodeHours,
   type DayOfWeek,
   type Priority,
   type TimeBlock,
+  type ChargeCodeSplit,
 } from "./types";
 
 import {
@@ -35,6 +37,8 @@ import {
   getWeeklyHourGoal,
   setWeeklyHourGoal,
   getCurrentWeekTotalHours,
+  getCurrentWeekKey,
+  getWeekNumber,
 } from "./state";
 
 import {
@@ -59,6 +63,11 @@ const projectHoursInput = document.getElementById("project-hours") as HTMLInputE
 const projectNoTargetCheckbox = document.getElementById("project-no-target") as HTMLInputElement;
 const projectHoursLabel = document.getElementById("project-hours-label") as HTMLElement;
 const projectPriorityInput = document.getElementById("project-priority") as HTMLSelectElement;
+const projectSplitToggle = document.getElementById("project-split-toggle") as HTMLInputElement;
+const splitToggleLabel = document.getElementById("split-toggle-label") as HTMLElement;
+const splitCodesSection = document.getElementById("split-codes-section")!;
+const splitCodesList = document.getElementById("split-codes-list")!;
+const splitValidationMsg = document.getElementById("split-validation-msg")!;
 const projectListManage = document.getElementById("project-list-manage")!;
 const projectListSection = document.getElementById("project-list-section")!;
 const projectSelector = document.getElementById("project-selector")!;
@@ -131,16 +140,37 @@ window.addEventListener("DOMContentLoaded", async () => {
   // Project form submit
   projectForm.addEventListener("submit", handleProjectSubmit);
 
-  // No-target checkbox toggles hours input
+  // No-target checkbox toggles hours input and split option
   projectNoTargetCheckbox.addEventListener("change", () => {
     if (projectNoTargetCheckbox.checked) {
       projectHoursLabel.style.display = "none";
       projectHoursInput.required = false;
       projectHoursInput.value = "";
+      splitToggleLabel.style.display = "none";
+      projectSplitToggle.checked = false;
+      splitCodesSection.classList.add("hidden");
     } else {
       projectHoursLabel.style.display = "";
       projectHoursInput.required = true;
+      splitToggleLabel.style.display = "";
     }
+  });
+
+  // Split charge codes toggle
+  projectSplitToggle.addEventListener("change", () => {
+    if (projectSplitToggle.checked) {
+      splitCodesSection.classList.remove("hidden");
+      if (splitCodesList.children.length === 0) {
+        addSplitCodeEntry();
+        addSplitCodeEntry();
+      }
+    } else {
+      splitCodesSection.classList.add("hidden");
+    }
+  });
+
+  document.getElementById("btn-add-split-code")!.addEventListener("click", () => {
+    addSplitCodeEntry();
   });
 
   // Close floating elements on outside click
@@ -647,6 +677,76 @@ function showProjectSelectorForEdit(e: MouseEvent, blockId: string): void {
 }
 
 // ============================================================
+// Split Charge Code Form Helpers
+// ============================================================
+
+function addSplitCodeEntry(code = "", percentage = ""): void {
+  const entry = document.createElement("div");
+  entry.className = "split-code-entry";
+  entry.innerHTML = `
+    <input type="text" class="split-code-name" placeholder="Code name" value="${code}" />
+    <input type="number" class="split-code-pct" placeholder="%" min="1" max="100" step="1" value="${percentage}" />
+    <span class="split-code-pct-label">%</span>
+    <button type="button" class="btn-danger btn-sm split-code-remove">&times;</button>
+  `;
+  entry.querySelector(".split-code-remove")!.addEventListener("click", () => {
+    entry.remove();
+    validateSplitPercentages();
+  });
+  entry.querySelector(".split-code-pct")!.addEventListener("input", () => {
+    validateSplitPercentages();
+  });
+  splitCodesList.appendChild(entry);
+  validateSplitPercentages();
+}
+
+function validateSplitPercentages(): boolean {
+  const entries = splitCodesList.querySelectorAll(".split-code-entry");
+  if (entries.length === 0) {
+    splitValidationMsg.textContent = "";
+    splitValidationMsg.classList.remove("split-validation-error");
+    return true;
+  }
+  let total = 0;
+  entries.forEach(entry => {
+    const pct = parseFloat((entry.querySelector(".split-code-pct") as HTMLInputElement).value) || 0;
+    total += pct;
+  });
+  if (Math.abs(total - 100) < 0.01) {
+    splitValidationMsg.textContent = "";
+    splitValidationMsg.classList.remove("split-validation-error");
+    return true;
+  } else {
+    splitValidationMsg.textContent = `Percentages sum to ${total}% (must be 100%)`;
+    splitValidationMsg.classList.add("split-validation-error");
+    return false;
+  }
+}
+
+function getSplitCodesFromForm(): ChargeCodeSplit[] | undefined {
+  if (!projectSplitToggle.checked) return undefined;
+  const entries = splitCodesList.querySelectorAll(".split-code-entry");
+  if (entries.length === 0) return undefined;
+  const splits: ChargeCodeSplit[] = [];
+  entries.forEach(entry => {
+    const code = (entry.querySelector(".split-code-name") as HTMLInputElement).value.trim();
+    const pct = parseFloat((entry.querySelector(".split-code-pct") as HTMLInputElement).value) || 0;
+    if (code && pct > 0) {
+      splits.push({ code, percentage: pct });
+    }
+  });
+  return splits.length > 0 ? splits : undefined;
+}
+
+function clearSplitCodesForm(): void {
+  splitCodesList.innerHTML = "";
+  splitValidationMsg.textContent = "";
+  splitValidationMsg.classList.remove("split-validation-error");
+  projectSplitToggle.checked = false;
+  splitCodesSection.classList.add("hidden");
+}
+
+// ============================================================
 // Sidebar - Project Summary
 // ============================================================
 
@@ -700,6 +800,25 @@ function renderSidebar(): void {
       : `Logged: <strong>${bal.currentWeekLogged.toFixed(1)} hrs</strong> this week<br/>
          <em>No weekly target</em>`;
 
+    // Charge code breakdown (target-based)
+    let chargeCodeHtml = "";
+    if (bal.project.chargeCodeSplits && bal.project.chargeCodeSplits.length > 0 && bal.weeklyTarget > 0) {
+      const weekNum = getWeekNumber(getCurrentWeekKey());
+      const breakdown = calculateChargeCodeHours(bal.weeklyTarget, bal.project.chargeCodeSplits, weekNum);
+      chargeCodeHtml = `
+        <div class="charge-code-breakdown">
+          <div class="charge-code-title">Charge Code Breakdown:</div>
+          ${breakdown.map(cc => `
+            <div class="charge-code-row">
+              <span class="charge-code-name">${cc.code}</span>
+              <span class="charge-code-hours">${cc.hours.toFixed(1)} hrs</span>
+              <span class="charge-code-pct">(${cc.percentage}%)</span>
+            </div>
+          `).join("")}
+        </div>
+      `;
+    }
+
     card.innerHTML = `
       <div class="project-card-compact">
         <span class="project-card-name">${bal.project.name}</span>
@@ -715,6 +834,7 @@ function renderSidebar(): void {
         <div class="project-card-stats">
           ${statsHtml}
         </div>
+        ${chargeCodeHtml}
       </div>
     `;
 
@@ -757,6 +877,18 @@ function showProjectForm(editId?: string): void {
       projectHoursInput.required = !noTarget;
       projectHoursInput.value = noTarget ? "" : String(project.weeklyHourTarget);
       projectPriorityInput.value = project.priority;
+      // Populate split codes
+      splitToggleLabel.style.display = noTarget ? "none" : "";
+      if (project.chargeCodeSplits && project.chargeCodeSplits.length > 0) {
+        projectSplitToggle.checked = true;
+        splitCodesSection.classList.remove("hidden");
+        splitCodesList.innerHTML = "";
+        project.chargeCodeSplits.forEach(s => {
+          addSplitCodeEntry(s.code, String(s.percentage));
+        });
+      } else {
+        clearSplitCodesForm();
+      }
     }
   } else {
     editingProjectId = null;
@@ -767,6 +899,8 @@ function showProjectForm(editId?: string): void {
     projectHoursInput.required = true;
     projectHoursInput.value = "";
     projectPriorityInput.value = "Medium";
+    splitToggleLabel.style.display = "";
+    clearSplitCodesForm();
   }
   projectNameInput.focus();
 }
@@ -791,10 +925,15 @@ function handleProjectSubmit(e: Event): void {
 
   if (!name || (!noTarget && (isNaN(hours) || hours <= 0))) return;
 
+  const chargeCodeSplits = getSplitCodesFromForm();
+  if (projectSplitToggle.checked && chargeCodeSplits) {
+    if (!validateSplitPercentages()) return;
+  }
+
   if (editingProjectId) {
-    updateProject(editingProjectId, { name, weeklyHourTarget: hours, priority });
+    updateProject(editingProjectId, { name, weeklyHourTarget: hours, priority, chargeCodeSplits });
   } else {
-    addProject(name, hours, priority);
+    addProject(name, hours, priority, chargeCodeSplits);
   }
 
   hideProjectForm();

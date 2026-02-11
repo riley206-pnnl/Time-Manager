@@ -43,12 +43,24 @@ export const END_HOUR = 19;
 export const SLOT_MINUTES = 30;
 export const SLOTS_PER_DAY = (END_HOUR - START_HOUR) * (60 / SLOT_MINUTES); // 24
 
+export interface ChargeCodeSplit {
+  code: string;
+  percentage: number;
+}
+
+export interface ChargeCodeHours {
+  code: string;
+  percentage: number;
+  hours: number;
+}
+
 export interface Project {
   id: string;
   name: string;
   weeklyHourTarget: number;
   priority: Priority;
   colorIndex: number;
+  chargeCodeSplits?: ChargeCodeSplit[];
 }
 
 export interface TimeBlock {
@@ -133,4 +145,57 @@ export function formatWeekRange(monday: Date): string {
 // Format date as ISO string (date only)
 export function toDateString(date: Date): string {
   return date.toISOString().split("T")[0];
+}
+
+// Calculate rounded hours per charge code for a given week.
+// Rounds to 0.5-hour increments and alternates rounding direction on odd/even
+// weeks so that percentages stay accurate over time.
+export function calculateChargeCodeHours(
+  totalHours: number,
+  splits: ChargeCodeSplit[],
+  weekNumber: number
+): ChargeCodeHours[] {
+  if (splits.length === 0) return [];
+
+  const items = splits.map((s, i) => {
+    const exact = totalHours * s.percentage / 100;
+    const floor = Math.floor(exact * 2) / 2;
+    return {
+      code: s.code,
+      percentage: s.percentage,
+      exact,
+      floor,
+      fractional: exact - floor,
+      index: i,
+      hours: floor,
+    };
+  });
+
+  // Distribute remaining 0.5-hour slots
+  const floorSum = items.reduce((sum, item) => sum + item.floor, 0);
+  let remainingSlots = Math.round((totalHours - floorSum) * 2);
+
+  // On even weeks: largest fractional gets the extra 0.5 first
+  // On odd weeks: smallest fractional gets it first (reverses rounding priority)
+  // This alternates which codes get rounded up vs down across weeks.
+  const sorted = [...items].sort((a, b) => {
+    if (weekNumber % 2 === 0) {
+      return b.fractional - a.fractional || a.index - b.index;
+    } else {
+      return a.fractional - b.fractional || b.index - a.index;
+    }
+  });
+
+  sorted.forEach(item => {
+    if (remainingSlots > 0) {
+      item.hours = item.floor + 0.5;
+      remainingSlots--;
+    }
+  });
+
+  return items.map(item => ({
+    code: item.code,
+    percentage: item.percentage,
+    hours: item.hours,
+  }));
 }

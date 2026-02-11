@@ -580,6 +580,106 @@ body {
   background: var(--standing-under) !important;
 }
 
+/* Split Charge Codes (Project Form) */
+
+#split-codes-section {
+  margin-bottom: 12px;
+  padding: 10px;
+  background: var(--bg-primary);
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-sm);
+}
+
+.split-code-entry {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 6px;
+}
+
+.split-code-entry .split-code-name {
+  flex: 1;
+  min-width: 0;
+}
+
+.split-code-entry .split-code-pct {
+  width: 70px;
+  flex-shrink: 0;
+}
+
+.split-code-entry .split-code-pct-label {
+  font-size: 13px;
+  color: var(--text-secondary);
+  flex-shrink: 0;
+}
+
+.split-code-entry .split-code-remove {
+  flex-shrink: 0;
+  padding: 4px 8px;
+}
+
+#btn-add-split-code {
+  margin-top: 4px;
+}
+
+.split-validation {
+  font-size: 12px;
+  margin-top: 6px;
+  min-height: 18px;
+}
+
+.split-validation-error {
+  color: var(--danger);
+  font-weight: 600;
+}
+
+/* Charge Code Breakdown (Sidebar) */
+
+.charge-code-breakdown {
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px solid var(--border-light);
+}
+
+.charge-code-title {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+  margin-bottom: 4px;
+}
+
+.charge-code-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 2px 0;
+  font-size: 12px;
+}
+
+.charge-code-name {
+  font-weight: 600;
+  color: var(--text-primary);
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.charge-code-hours {
+  font-weight: 700;
+  color: var(--text-primary);
+  flex-shrink: 0;
+}
+
+.charge-code-pct {
+  font-size: 11px;
+  color: var(--text-secondary);
+  flex-shrink: 0;
+}
+
 /* ============================================================
    Modals
    ============================================================ */
