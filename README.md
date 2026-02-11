@@ -1,5 +1,9 @@
 # Time Manager
 
+
+https://github.com/user-attachments/assets/e750708a-359e-4683-a52a-281a1f4dd5a3
+
+
 A desktop time management application for weekly project scheduling and time tracking. Built with Tauri v2 + TypeScript.
 
 ## Features
