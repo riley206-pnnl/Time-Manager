@@ -6,6 +6,7 @@ import type {
   Template,
   DayOfWeek,
   ProjectBalance,
+  WeeklyStanding,
 } from "./types";
 import {
   generateId,
@@ -340,9 +341,10 @@ export function calculateProjectBalances(): ProjectBalance[] {
   const balances = appData.projects.map((project) => {
     let carryover = 0;
 
-    // Calculate carryover from all previous weeks
+    // Calculate carryover from all previous weeks (skip completely empty weeks)
     for (const week of sortedWeeks) {
       if (week.weekKey >= currentKey) break;
+      if (week.blocks.length === 0) continue;
       const hoursLogged =
         week.blocks.filter((b) => b.projectId === project.id).length *
         (SLOT_MINUTES / 60);
@@ -363,6 +365,20 @@ export function calculateProjectBalances(): ProjectBalance[] {
           ? 100
           : 0;
 
+    // Calculate weekly standing (compare logged vs weekly target)
+    const tolerance = Math.max(0.5, project.weeklyHourTarget * 0.10);
+    let standing: WeeklyStanding;
+
+    if (project.weeklyHourTarget === 0) {
+      standing = "on-track";
+    } else if (currentHours > project.weeklyHourTarget + tolerance) {
+      standing = "over";
+    } else if (currentHours < project.weeklyHourTarget - tolerance) {
+      standing = "under";
+    } else {
+      standing = "on-track";
+    }
+
     return {
       project,
       weeklyTarget: project.weeklyHourTarget,
@@ -370,6 +386,7 @@ export function calculateProjectBalances(): ProjectBalance[] {
       carryoverBalance: carryover,
       effectiveAvailable,
       percentComplete: Math.min(percentComplete, 100),
+      standing,
     };
   });
 

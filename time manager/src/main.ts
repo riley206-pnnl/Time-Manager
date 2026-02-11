@@ -56,6 +56,8 @@ const projectForm = document.getElementById("project-form") as HTMLFormElement;
 const projectModalTitle = document.getElementById("project-modal-title")!;
 const projectNameInput = document.getElementById("project-name") as HTMLInputElement;
 const projectHoursInput = document.getElementById("project-hours") as HTMLInputElement;
+const projectNoTargetCheckbox = document.getElementById("project-no-target") as HTMLInputElement;
+const projectHoursLabel = document.getElementById("project-hours-label") as HTMLElement;
 const projectPriorityInput = document.getElementById("project-priority") as HTMLSelectElement;
 const projectListManage = document.getElementById("project-list-manage")!;
 const projectListSection = document.getElementById("project-list-section")!;
@@ -128,6 +130,18 @@ window.addEventListener("DOMContentLoaded", async () => {
 
   // Project form submit
   projectForm.addEventListener("submit", handleProjectSubmit);
+
+  // No-target checkbox toggles hours input
+  projectNoTargetCheckbox.addEventListener("change", () => {
+    if (projectNoTargetCheckbox.checked) {
+      projectHoursLabel.style.display = "none";
+      projectHoursInput.required = false;
+      projectHoursInput.value = "";
+    } else {
+      projectHoursLabel.style.display = "";
+      projectHoursInput.required = true;
+    }
+  });
 
   // Close floating elements on outside click
   document.addEventListener("click", (e) => {
@@ -221,6 +235,20 @@ function renderWeeklyProgress(): void {
   weeklyHoursText.textContent = `${totalHours} / ${goalHours} hrs`;
   weeklyPercentage.textContent = `${percentage}%`;
   weeklyProgressBar.style.width = `${percentage}%`;
+
+  // Color the progress bar based on aggregate standing
+  if (goalHours > 0) {
+    const tolerance = Math.max(1, goalHours * 0.05);
+    if (totalHours > goalHours + tolerance) {
+      weeklyProgressBar.style.background = "linear-gradient(90deg, #e74c3c, #c0392b)";
+    } else if (totalHours < goalHours - tolerance) {
+      weeklyProgressBar.style.background = "linear-gradient(90deg, #f39c12, #e67e22)";
+    } else {
+      weeklyProgressBar.style.background = "linear-gradient(90deg, #27ae60, #2ecc71)";
+    }
+  } else {
+    weeklyProgressBar.style.background = "linear-gradient(90deg, #27ae60, #2ecc71)";
+  }
 }
 
 // ============================================================
@@ -651,21 +679,48 @@ function renderSidebar(): void {
           ? `${bal.carryoverBalance.toFixed(1)} behind`
           : "0 carryover";
 
+    const hasTarget = bal.weeklyTarget > 0;
+    const standingClass = `standing-${bal.standing}`;
+    const standingIcon = bal.standing === "on-track" ? "\u2713"
+      : bal.standing === "over" ? "\u25B2" : "\u25BC";
+    const standingLabel = bal.standing === "on-track" ? "On Track"
+      : bal.standing === "over" ? "Over" : "Behind";
+    const barStandingClass = bal.standing !== "on-track" ? ` ${standingClass}` : "";
+
+    const compactRight = hasTarget
+      ? `<span class="standing-badge ${standingClass}">${standingIcon} ${standingLabel}</span>
+         <span class="project-card-percent">${bal.percentComplete}%</span>`
+      : `<span class="project-card-percent">${bal.currentWeekLogged.toFixed(1)} hrs</span>`;
+
+    const statsHtml = hasTarget
+      ? `Target: <strong>${bal.weeklyTarget} hrs/week</strong><br/>
+         Logged: <strong>${bal.currentWeekLogged.toFixed(1)} hrs</strong> this week<br/>
+         Carryover: <span class="${carryoverClass}"><strong>${carryoverText}</strong></span><br/>
+         Effective: <strong>${bal.effectiveAvailable.toFixed(1)} hrs</strong> available`
+      : `Logged: <strong>${bal.currentWeekLogged.toFixed(1)} hrs</strong> this week<br/>
+         <em>No weekly target</em>`;
+
     card.innerHTML = `
-      <div class="project-card-header">
+      <div class="project-card-compact">
         <span class="project-card-name">${bal.project.name}</span>
-        <span class="project-card-priority" style="background: ${pColor.border}">${bal.project.priority}</span>
-      </div>
-      <div class="project-card-stats">
-        Target: <strong>${bal.weeklyTarget} hrs/week</strong><br/>
-        Logged: <strong>${bal.currentWeekLogged.toFixed(1)} hrs</strong> this week<br/>
-        Carryover: <span class="${carryoverClass}"><strong>${carryoverText}</strong></span><br/>
-        Effective: <strong>${bal.effectiveAvailable.toFixed(1)} hrs</strong> available
+        ${compactRight}
       </div>
       <div class="project-card-bar">
-        <div class="project-card-bar-fill" style="width: ${bal.percentComplete}%; background: ${pColor.border}"></div>
+        <div class="project-card-bar-fill${barStandingClass}" style="width: ${hasTarget ? bal.percentComplete : 0}%; background: ${pColor.border}"></div>
+      </div>
+      <div class="project-card-details">
+        <div class="project-card-header">
+          <span class="project-card-priority" style="background: ${pColor.border}">${bal.project.priority}</span>
+        </div>
+        <div class="project-card-stats">
+          ${statsHtml}
+        </div>
       </div>
     `;
+
+    card.addEventListener("click", () => {
+      card.classList.toggle("expanded");
+    });
 
     projectSummaryList.appendChild(card);
   });
@@ -696,13 +751,20 @@ function showProjectForm(editId?: string): void {
     if (project) {
       projectModalTitle.textContent = "Edit Project";
       projectNameInput.value = project.name;
-      projectHoursInput.value = String(project.weeklyHourTarget);
+      const noTarget = project.weeklyHourTarget === 0;
+      projectNoTargetCheckbox.checked = noTarget;
+      projectHoursLabel.style.display = noTarget ? "none" : "";
+      projectHoursInput.required = !noTarget;
+      projectHoursInput.value = noTarget ? "" : String(project.weeklyHourTarget);
       projectPriorityInput.value = project.priority;
     }
   } else {
     editingProjectId = null;
     projectModalTitle.textContent = "Add Project";
     projectNameInput.value = "";
+    projectNoTargetCheckbox.checked = false;
+    projectHoursLabel.style.display = "";
+    projectHoursInput.required = true;
     projectHoursInput.value = "";
     projectPriorityInput.value = "Medium";
   }
@@ -723,10 +785,11 @@ function closeProjectForm(): void {
 function handleProjectSubmit(e: Event): void {
   e.preventDefault();
   const name = projectNameInput.value.trim();
-  const hours = parseFloat(projectHoursInput.value);
+  const noTarget = projectNoTargetCheckbox.checked;
+  const hours = noTarget ? 0 : parseFloat(projectHoursInput.value);
   const priority = projectPriorityInput.value as Priority;
 
-  if (!name || isNaN(hours) || hours <= 0) return;
+  if (!name || (!noTarget && (isNaN(hours) || hours <= 0))) return;
 
   if (editingProjectId) {
     updateProject(editingProjectId, { name, weeklyHourTarget: hours, priority });
@@ -754,7 +817,7 @@ function renderProjectList(): void {
     item.innerHTML = `
       <div class="project-info">
         <span class="priority-dot" style="background: ${pColor.border}"></span>
-        <span>${project.name} (${project.weeklyHourTarget}h, ${project.priority})</span>
+        <span>${project.name} (${project.weeklyHourTarget > 0 ? project.weeklyHourTarget + "h" : "No target"}, ${project.priority})</span>
       </div>
       <div class="project-actions">
         <button class="btn-secondary btn-sm edit-btn">Edit</button>

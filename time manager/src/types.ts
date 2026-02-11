@@ -4,6 +4,8 @@
 
 export type Priority = "High" | "Medium" | "Low";
 
+export type WeeklyStanding = "on-track" | "over" | "under";
+
 export type DayOfWeek = "Monday" | "Tuesday" | "Wednesday" | "Thursday" | "Friday";
 
 export const DAYS: DayOfWeek[] = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"];
@@ -82,6 +84,7 @@ export interface ProjectBalance {
   carryoverBalance: number;
   effectiveAvailable: number;
   percentComplete: number;
+  standing: WeeklyStanding;
 }
 
 // Helper to format slot index to time string

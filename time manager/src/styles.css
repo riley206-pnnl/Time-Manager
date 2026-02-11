@@ -16,6 +16,12 @@
   --danger: #e74c3c;
   --danger-hover: #c0392b;
   --success: #27ae60;
+  --standing-on-track: #27ae60;
+  --standing-on-track-bg: #eafaf1;
+  --standing-over: #e74c3c;
+  --standing-over-bg: #fdecea;
+  --standing-under: #f39c12;
+  --standing-under-bg: #fef9e7;
   --high-color: #f8a0a0;
   --high-color-dark: #e74c3c;
   --medium-color: #f8e08e;
@@ -404,9 +410,46 @@ body {
 .project-card {
   background: var(--bg-primary);
   border-radius: var(--radius-sm);
-  padding: 10px;
-  margin-bottom: 8px;
+  padding: 8px 10px;
+  margin-bottom: 4px;
   border-left: 4px solid var(--border-color);
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.project-card:hover {
+  background: var(--border-light);
+}
+
+.project-card-compact {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 4px;
+}
+
+.project-card-compact .project-card-name {
+  flex-shrink: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.project-card-percent {
+  margin-left: auto;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  flex-shrink: 0;
+}
+
+.project-card-details {
+  display: none;
+  padding-top: 6px;
+}
+
+.project-card.expanded .project-card-details {
+  display: block;
 }
 
 .project-card.priority-High {
@@ -423,7 +466,7 @@ body {
 
 .project-card-header {
   display: flex;
-  justify-content: space-between;
+  justify-content: flex-start;
   align-items: center;
   margin-bottom: 6px;
 }
@@ -500,6 +543,41 @@ body {
 
 .carryover-zero {
   color: var(--text-secondary);
+}
+
+/* Standing indicators */
+.standing-badge {
+  font-size: 10px;
+  font-weight: 600;
+  padding: 1px 6px;
+  border-radius: 3px;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+  margin-left: 6px;
+  display: inline-block;
+}
+
+.standing-badge.standing-on-track {
+  background: var(--standing-on-track-bg);
+  color: var(--standing-on-track);
+}
+
+.standing-badge.standing-over {
+  background: var(--standing-over-bg);
+  color: var(--standing-over);
+}
+
+.standing-badge.standing-under {
+  background: var(--standing-under-bg);
+  color: var(--standing-under);
+}
+
+.project-card-bar-fill.standing-over {
+  background: var(--standing-over) !important;
+}
+
+.project-card-bar-fill.standing-under {
+  background: var(--standing-under) !important;
 }
 
 /* ============================================================

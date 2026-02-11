@@ -63,7 +63,11 @@
             Name
             <input type="text" id="project-name" required />
           </label>
-          <label>
+          <label class="checkbox-label">
+            <input type="checkbox" id="project-no-target" />
+            No weekly target (contributes to overall goal only)
+          </label>
+          <label id="project-hours-label">
             Weekly Hour Target
             <input type="number" id="project-hours" min="0.5" step="0.5" required />
           </label>
